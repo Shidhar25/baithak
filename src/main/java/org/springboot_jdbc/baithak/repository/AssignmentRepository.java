@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -16,4 +17,13 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 
     @Query("SELECT COUNT(a) > 0 FROM Assignment a WHERE a.member.id = :memberId AND a.weekNumber = :week")
     boolean wasAssignedThisWeek(@Param("memberId") UUID memberId, @Param("week") int week);
+
+    @Query("""
+    SELECT a FROM Assignment a 
+    WHERE a.weekNumber = :week 
+      AND a.place.vaarCode = :vaarCode
+""")
+    List<Assignment> findByWeekAndVaarCode(@Param("week") int week, @Param("vaarCode") int vaarCode);
+
+
 }

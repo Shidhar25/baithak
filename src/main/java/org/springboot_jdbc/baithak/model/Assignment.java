@@ -5,7 +5,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import org.springframework.data.annotation.Id;
 
-import java.lang.reflect.Member;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -83,11 +82,11 @@ public class Assignment {
     public UUID getId() {
         return id;
     }
-    public void setMember(Member member) {
+    public void setMember(member member) {
         this.member = (member) member;
     }
-    public Member getMember() {
-        return (Member) member;
+    public member getMember() {
+        return (member) member;
     }
 
 }
