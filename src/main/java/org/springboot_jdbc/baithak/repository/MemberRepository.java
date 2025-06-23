@@ -6,9 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.lang.reflect.Member;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface MemberRepository extends JpaRepository<member, UUID> {
     List<member> findAllByOrderByNameAsc();
+    member findByName(String name);
+
+
 }

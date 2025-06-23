@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -16,4 +17,7 @@ public interface PlaceRepository extends JpaRepository<places, UUID> {
     @Query(value = "SELECT * FROM places p WHERE p.vaar_code = :vaarCode AND p.id NOT IN (" +
             "SELECT place_id FROM assignments WHERE week_number = :week)", nativeQuery = true)
     List<places> findAvailablePlacesForWeek(@Param("vaarCode") int vaarCode, @Param("week") int week);
+    places findByName(String name);
+
+
 }

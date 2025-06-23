@@ -24,6 +24,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
       AND a.place.vaarCode = :vaarCode
 """)
     List<Assignment> findByWeekAndVaarCode(@Param("week") int week, @Param("vaarCode") int vaarCode);
+    boolean existsByPlaceIdAndWeekNumber(UUID placeId, int weekNumber);
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Assignment a " +
+            "WHERE a.member.id = :memberId AND a.place.id = :placeId AND a.weekNumber BETWEEN :startWeek AND :endWeek")
+    boolean existsRecentAssignment(@Param("memberId") UUID memberId,
+                                   @Param("placeId") UUID placeId,
+                                   @Param("startWeek") int startWeek,
+                                   @Param("endWeek") int endWeek);
+
 
 
 }

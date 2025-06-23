@@ -113,6 +113,38 @@ public class AssignmentService {
         System.out.println("Available places for vaarCode=" + vaarCode + ", week=" + week + ": " + result.size());
         return result;
     }
+    public void manualAssign(String memberName, String placeName, int week) {
+        member m = memberRepo.findByName(memberName);
+        places p = placeRepo.findByName(placeName);
+
+        if (m == null || p == null) {
+            throw new IllegalArgumentException("Invalid member or place name");
+        }
+
+        // Check if already assigned
+        boolean alreadyAssigned = assignmentRepo.existsByPlaceIdAndWeekNumber(p.getId(), week);
+        if (alreadyAssigned) {
+            throw new IllegalArgumentException("This place is already assigned in this week.");
+        }
+        boolean assignedInLast10Weeks = assignmentRepo.existsRecentAssignment(m.getId(), p.getId(), week - 9);
+        if (assignedInLast10Weeks) {
+            throw new IllegalArgumentException("This member was already assigned to this place in the last 10 weeks.");
+        }
+
+
+        Assignment assignment = new Assignment();
+        assignment.setId(UUID.randomUUID());
+        assignment.setMember(m);
+        assignment.setPlace(p);
+        assignment.setWeekNumber(week);
+        assignment.setDayOfWeek(p.getVaarName());
+        assignment.setAssignedDate(LocalDate.now());
+        assignment.setManual(true);
+        assignment.setCreatedAt(LocalDateTime.now());
+
+        assignmentRepo.save(assignment);
+    }
+
 
 
 

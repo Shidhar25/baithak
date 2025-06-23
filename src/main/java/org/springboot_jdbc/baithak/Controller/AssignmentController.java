@@ -1,6 +1,7 @@
 package org.springboot_jdbc.baithak.Controller;
 
 import org.springboot_jdbc.baithak.dto.AssignmentDTO;
+import org.springboot_jdbc.baithak.dto.ManualAssignmentRequest;
 import org.springboot_jdbc.baithak.model.Assignment;
 import org.springboot_jdbc.baithak.model.places;
 import org.springboot_jdbc.baithak.service.AssignmentService;
@@ -14,40 +15,45 @@ import java.util.List;
 @RequestMapping("/api/assign")
 public class AssignmentController {
 
-//    @Autowired
-//    private AssignmentService service;
-//
-//    @PostMapping("/run")
-//    public ResponseEntity<String> runAssignment(@RequestParam int vaarCode, @RequestParam int week) {
-//        service.assignWeekly(vaarCode, week);
-//        return ResponseEntity.ok("Assignment completed for vaarCode=" + vaarCode);
-//    }
-//    @GetMapping("/view")
-//    public ResponseEntity<List<AssignmentDTO>> viewAssignments(
-//            @RequestParam int vaarCode,
-//            @RequestParam int week
-//    ) {
-//        List<Assignment> assignments = service.getAssignmentsByWeekAndVaarCode(week, vaarCode);
-//
-//        List<AssignmentDTO> dtoList = assignments.stream()
-//                .map(a -> new AssignmentDTO(
-//                        a.getMember().getName(),
-//                        a.getPlace().getName(),
-//                        a.getDayOfWeek(),
-//                        a.getWeekNumber()
-//                ))
-//                .toList();
-//
-//        return ResponseEntity.ok(dtoList);
-//    }
-//    @GetMapping("/available-places")
-//    public ResponseEntity<List<places>> getAvailablePlaces(
-//            @RequestParam int vaarCode,
-//            @RequestParam int week) {
-//        List<places> available = service.getAvailablePlaces(vaarCode, week);
-//        System.out.println("Fetched " + available.size() + " available places");
-//        return ResponseEntity.ok(available);
-//    }
+    @Autowired
+    private AssignmentService service;
+
+    @PostMapping("/run")
+    public ResponseEntity<String> runAssignment(@RequestParam int vaarCode, @RequestParam int week) {
+        service.assignWeekly(vaarCode, week);
+        return ResponseEntity.ok("Assignment completed for vaarCode=" + vaarCode);
+    }
+    @GetMapping("/view")
+    public ResponseEntity<List<AssignmentDTO>> viewAssignments(
+            @RequestParam int vaarCode,
+            @RequestParam int week
+    ) {
+        List<Assignment> assignments = service.getAssignmentsByWeekAndVaarCode(week, vaarCode);
+
+        List<AssignmentDTO> dtoList = assignments.stream()
+                .map(a -> new AssignmentDTO(
+                        a.getMember().getName(),
+                        a.getPlace().getName(),
+                        a.getDayOfWeek(),
+                        a.getWeekNumber()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(dtoList);
+    }
+    @GetMapping("/available-places")
+    public ResponseEntity<List<places>> getAvailablePlaces(
+            @RequestParam int vaarCode,
+            @RequestParam int week) {
+        List<places> available = service.getAvailablePlaces(vaarCode, week);
+        System.out.println("Fetched " + available.size() + " available places");
+        return ResponseEntity.ok(available);
+    }
+    @PostMapping("/manual")
+    public ResponseEntity<String> manualAssign(@RequestBody ManualAssignmentRequest request) {
+        service.manualAssign(request.getMemberName(), request.getPlaceName(), request.getWeek());
+        return ResponseEntity.ok("Manually assigned.");
+    }
 
 
 
