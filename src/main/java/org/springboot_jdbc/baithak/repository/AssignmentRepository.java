@@ -49,5 +49,6 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
     List<Assignment> findByWeekAndVaarCodeAndGender(@Param("week") int week,
                                                     @Param("vaarCode") int vaarCode,
                                                     @Param("gender") String gender);
+        List<Assignment> findByWeekNumber(int weekNumber);
 
 }

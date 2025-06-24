@@ -18,18 +18,5 @@ public interface PlaceRepository extends JpaRepository<places, UUID> {
             "SELECT place_id FROM assignments WHERE week_number = :week)", nativeQuery = true)
     List<places> findAvailablePlacesForWeek(@Param("vaarCode") int vaarCode, @Param("week") int week);
     places findByName(String name);
-    @Query("""
-    SELECT p FROM female_places p
-    WHERE p.vaarCode = :vaarCode
-      AND p.femaleAllowed = :femaleAllowed
-      AND p.id NOT IN (
-        SELECT a.place.id FROM Assignment a
-        WHERE a.weekNumber = :week
-      )
-""")
-    List<places> findAvailablePlacesForWeekAndGender(@Param("vaarCode") int vaarCode,
-                                                     @Param("week") int week,
-                                                     @Param("femaleAllowed") boolean femaleAllowed);
-
 
 }

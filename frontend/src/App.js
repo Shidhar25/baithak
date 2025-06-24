@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 
 const daysOfWeek = ['रविवार', 'सोमवार', 'मंगळवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+
 const vaarList = [
     { name: 'रविवार', code: 7 },
     { name: 'सोमवार', code: 1 },
@@ -30,7 +31,7 @@ function App() {
     const [assignments, setAssignments] = useState([]);
     const [availablePlaces, setAvailablePlaces] = useState([]);
     const [weekOffset, setWeekOffset] = useState(0);
-    const [selectedVaarCode, setSelectedVaarCode] = useState(1);
+    const [selectedVaarCode, setSelectedVaarCode] = useState(1); // default: सोमवार
 
     const today = new Date();
     const sunday = new Date(today);
@@ -38,25 +39,23 @@ function App() {
     const weekDates = getWeekDates(sunday);
     const weekNumber = weekOffset + 1;
 
-    const fetchData = () => {
+    useEffect(() => {
         fetch("http://localhost:8081/api/members")
             .then(res => res.json())
             .then(data => setMembers(data))
             .catch(err => console.error("Error fetching members:", err));
+    }, []);
 
+    useEffect(() => {
         fetch(`http://localhost:8081/api/assign/available-places?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
             .then(res => res.json())
             .then(data => setAvailablePlaces(data))
-            .catch(err => console.error("Error fetching available places:", err));
+            .catch(err => console.error("Error fetching places:", err));
 
         fetch(`http://localhost:8081/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
             .then(res => res.json())
             .then(data => setAssignments(data))
             .catch(err => console.error("Error fetching assignments:", err));
-    };
-
-    useEffect(() => {
-        fetchData();
     }, [selectedVaarCode, weekNumber]);
 
     const getAssignedPlace = (memberName, day) => {
@@ -66,36 +65,42 @@ function App() {
         return match ? match.placeName : "";
     };
 
-    const renderMemberGrid = (filteredMembers) => (
-        filteredMembers.map((member, rowIndex) => (
-            <React.Fragment key={rowIndex}>
-                <div className="header-cell header-name">{member.name}</div>
-                {daysOfWeek.map((day, colIndex) => {
-                    const assignedPlace = getAssignedPlace(member.name, day);
-                    return (
-                        <div className="grid-box" key={`cell-${rowIndex}-${colIndex}`}>
-                            <select
-                                className="cell-dropdown"
-                                value={assignedPlace || ""}
-                                disabled={!!assignedPlace} // Disable if already assigned
-                            >
-                                <option value="">{assignedPlace ? assignedPlace : "निवडा"}</option>
-                                {!assignedPlace && availablePlaces.map(place => (
-                                    <option key={place.id} value={place.name}>{place.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    );
-                })}
-            </React.Fragment>
-        ))
-    );
+    const updateAssignment = (memberName, dayOfWeek, placeName) => {
+        fetch("http://localhost:8081/api/assign/manual", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                memberName,
+                placeName,
+                week: weekNumber
+            })
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Assignment failed");
+                return res.text();
+            })
+            .then(() => {
+                alert("Assigned!");
+                // Refresh assignments and available places
+                fetch(`http://localhost:8081/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
+                    .then(res => res.json())
+                    .then(data => setAssignments(data));
 
-    const maleMembers = members.filter(m => m.gender?.toLowerCase() === 'male');
-    const femaleMembers = members.filter(m => m.gender?.toLowerCase() === 'female');
+                fetch(`http://localhost:8081/api/assign/available-places?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
+                    .then(res => res.json())
+                    .then(data => setAvailablePlaces(data));
+            })
+            .catch(err => {
+                alert("Error: " + err.message);
+            });
+    };
 
     return (
         <div className="wrapper">
+
+            {/* Vaar Code Selector */}
             <div className="vaar-nav">
                 {vaarList.map(vaar => (
                     <button
@@ -108,39 +113,53 @@ function App() {
                 ))}
             </div>
 
+            {/* Week Navigation */}
             <div className="week-nav">
                 <button onClick={() => setWeekOffset(weekOffset - 1)}>⏮ मागील आठवडा</button>
                 <span>आठवडा {weekNumber}</span>
                 <button onClick={() => setWeekOffset(weekOffset + 1)}>पुढील आठवडा ⏭</button>
             </div>
 
-            <h2>👨 पुरुष विभाग</h2>
+            {/* Grid Table */}
             <div className="scrollable-grid">
                 <div className="grid-container">
                     <div className="header-cell week-cell">तारीख</div>
                     {weekDates.map((date, i) => (
                         <div className="header-cell date-cell" key={i}>{date}</div>
                     ))}
-                    <div className="header-cell empty-cell"></div>
-                    {daysOfWeek.map((day, i) => (
-                        <div className="header-cell" key={i}>{day}</div>
-                    ))}
-                    {renderMemberGrid(maleMembers)}
-                </div>
-            </div>
 
-            <h2>👩 महिला विभाग</h2>
-            <div className="scrollable-grid">
-                <div className="grid-container">
-                    <div className="header-cell week-cell">तारीख</div>
-                    {weekDates.map((date, i) => (
-                        <div className="header-cell date-cell" key={i}>{date}</div>
-                    ))}
                     <div className="header-cell empty-cell"></div>
                     {daysOfWeek.map((day, i) => (
                         <div className="header-cell" key={i}>{day}</div>
                     ))}
-                    {renderMemberGrid(femaleMembers)}
+
+                    {members.map((member, rowIndex) => (
+                        <React.Fragment key={rowIndex}>
+                            <div className="header-cell header-name">{member.name}</div>
+                            {daysOfWeek.map((day, colIndex) => {
+                                const assignedPlace = getAssignedPlace(member.name, day);
+                                return (
+                                    <div className="grid-box" key={`cell-${rowIndex}-${colIndex}`}>
+                                        <select
+                                            className="cell-dropdown"
+                                            value={assignedPlace}
+                                            onChange={(e) =>
+                                                updateAssignment(member.name, day, e.target.value)
+                                            }
+                                            disabled={!!assignedPlace} // disable if already assigned
+                                        >
+                                            <option value="">निवडा</option>
+                                            {availablePlaces.map(place => (
+                                                <option key={place.id} value={place.name}>
+                                                    {place.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                );
+                            })}
+                        </React.Fragment>
+                    ))}
                 </div>
             </div>
         </div>
