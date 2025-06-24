@@ -1,8 +1,5 @@
 package org.springboot_jdbc.baithak.model;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import org.springframework.data.annotation.Id;
 
 import java.time.LocalDate;
@@ -89,4 +86,23 @@ public class Assignment {
         return (member) member;
     }
 
+    @Entity
+    @Table(name = "female_rotation_state")
+    public static class FemaleRotationState {
+        @jakarta.persistence.Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        private int lastUsedMemberIndex;
+
+        private LocalDateTime updatedAt;
+
+        // Getters and setters
+    }
+
+    public static class FemaleMember {
+    }
+
+    public static class FemaleAssignment {
+    }
 }

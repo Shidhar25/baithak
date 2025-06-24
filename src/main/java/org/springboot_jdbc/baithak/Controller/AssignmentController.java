@@ -3,7 +3,9 @@ package org.springboot_jdbc.baithak.Controller;
 import org.springboot_jdbc.baithak.dto.AssignmentDTO;
 import org.springboot_jdbc.baithak.dto.ManualAssignmentRequest;
 import org.springboot_jdbc.baithak.model.Assignment;
+import org.springboot_jdbc.baithak.model.member;
 import org.springboot_jdbc.baithak.model.places;
+import org.springboot_jdbc.baithak.repository.MemberRepository;
 import org.springboot_jdbc.baithak.service.AssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/assign")
+@CrossOrigin(origins = "http://localhost:3000")
 public class AssignmentController {
 
     @Autowired
@@ -54,9 +57,5 @@ public class AssignmentController {
         service.manualAssign(request.getMemberName(), request.getPlaceName(), request.getWeek());
         return ResponseEntity.ok("Manually assigned.");
     }
-
-
-
-
 
 }

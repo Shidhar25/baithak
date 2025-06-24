@@ -121,16 +121,19 @@ public class AssignmentService {
             throw new IllegalArgumentException("Invalid member or place name");
         }
 
-        // Check if already assigned
         boolean alreadyAssigned = assignmentRepo.existsByPlaceIdAndWeekNumber(p.getId(), week);
         if (alreadyAssigned) {
             throw new IllegalArgumentException("This place is already assigned in this week.");
         }
-        boolean assignedInLast10Weeks = assignmentRepo.existsRecentAssignment(m.getId(), p.getId(), week - 9);
-        if (assignedInLast10Weeks) {
-            throw new IllegalArgumentException("This member was already assigned to this place in the last 10 weeks.");
-        }
 
+        int startWeek = Math.max(1, week - 9);
+        boolean repeated = assignmentRepo.existsInVaarRangeLastWeeks(
+                m.getId(), p.getId(), p.getVaarCode(), startWeek, week - 1
+        );
+
+        if (repeated) {
+            throw new IllegalArgumentException("This member had this place in the same vaarCode in the last 10 weeks.");
+        }
 
         Assignment assignment = new Assignment();
         assignment.setId(UUID.randomUUID());
@@ -144,6 +147,7 @@ public class AssignmentService {
 
         assignmentRepo.save(assignment);
     }
+
 
 
 
