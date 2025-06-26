@@ -31,4 +31,5 @@ public class WeeklyScheduleRow {
         this.memberName = memberName;
     }
 // Getters
+
 }

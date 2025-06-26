@@ -33,4 +33,22 @@ public class ExcelExportController {
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(file);
     }
+    @GetMapping("/download/personalized/week/{weekNumber}")
+    public ResponseEntity<Resource> downloadPersonalized(@PathVariable int weekNumber) {
+        try {
+            ByteArrayInputStream in = excelService.generatePersonalizedExcelForWeek(weekNumber);
+            InputStreamResource file = new InputStreamResource(in);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=personal_week_" + weekNumber + ".xlsx")
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(file);
+        } catch (Exception e) {
+            e.printStackTrace(); // See terminal for error
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
+
 }

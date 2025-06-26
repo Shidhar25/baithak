@@ -25,6 +25,15 @@ public class Assignment {
     private Integer weekNumber;
     private Boolean isManual;
     private LocalDateTime createdAt;
+    private LocalDate assignmentDate;
+
+    public LocalDate getAssignmentDate() {
+        return assignmentDate;
+    }
+
+    public void setAssignmentDate(LocalDate assignmentDate) {
+        this.assignmentDate = assignmentDate;
+    }
 
     public Boolean getManual() {
         return isManual;
