@@ -25,6 +25,7 @@ public class Assignment {
     private Integer weekNumber;
     private Boolean isManual;
     private LocalDateTime createdAt;
+    @Column(name = "assignment_date")
     private LocalDate assignmentDate;
 
     public LocalDate getAssignmentDate() {

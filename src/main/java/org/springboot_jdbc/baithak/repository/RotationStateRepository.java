@@ -9,4 +9,8 @@ import org.springframework.stereotype.Repository;
 public interface RotationStateRepository extends JpaRepository<RotationState, Long> {
     @Query("SELECT r FROM RotationState r ORDER BY r.updatedAt DESC LIMIT 1")
     RotationState getLastState();
+
+    @Query("SELECT r FROM RotationState r WHERE r.gender = :gender ORDER BY r.updatedAt DESC LIMIT 1")
+    RotationState getLastStateForGender(String gender);
+
 }

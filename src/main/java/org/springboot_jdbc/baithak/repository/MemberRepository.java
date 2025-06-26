@@ -17,6 +17,7 @@ public interface MemberRepository extends JpaRepository<member, UUID> {
     List<member> findByGenderIgnoreCase(String gender);
     member findByNameAndGender(String name, String gender);
 
+    List<member> findByGenderIgnoreCaseOrderByNameAsc(String gender);
 
 
 

@@ -28,13 +28,14 @@ function getWeekDates(startDate) {
 }
 
 function AssignmentGrid() {
-    const navigate = useNavigate(); // ✅ useNavigate inside the component
+    const navigate = useNavigate();
 
     const [members, setMembers] = useState([]);
+    const [femaleMembers, setFemaleMembers] = useState([]);
     const [assignments, setAssignments] = useState([]);
     const [availablePlaces, setAvailablePlaces] = useState([]);
     const [weekOffset, setWeekOffset] = useState(0);
-    const [selectedVaarCode, setSelectedVaarCode] = useState(1); // Default to Monday
+    const [selectedVaarCode, setSelectedVaarCode] = useState(1);
 
     const today = new Date();
     const sunday = new Date(today);
@@ -45,7 +46,10 @@ function AssignmentGrid() {
     useEffect(() => {
         fetch("http://localhost:8081/api/members")
             .then(res => res.json())
-            .then(data => setMembers(data))
+            .then(data => {
+                setMembers(data.filter(m => m.gender === 'male'));
+                setFemaleMembers(data.filter(m => m.gender === 'female'));
+            })
             .catch(err => console.error("Error fetching members:", err));
     }, []);
 
@@ -86,8 +90,6 @@ function AssignmentGrid() {
             })
             .then(() => {
                 alert("Assigned!");
-
-                // Refresh assignments and available places
                 fetch(`http://localhost:8081/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
                     .then(res => res.json())
                     .then(data => setAssignments(data));
@@ -101,17 +103,67 @@ function AssignmentGrid() {
             });
     };
 
+    const renderGrid = (memberList, sectionTitle) => (
+        <>
+            <h2 style={{ marginTop: '20px' }}>{sectionTitle}</h2>
+            <div className="grid-container">
+                <div className="header-cell week-cell">तारीख</div>
+                {weekDates.map((date, i) => (
+                    <div
+                        className={`header-cell date-cell ${selectedVaarCode - 1 === i ? 'highlight' : ''}`}
+                        key={i}
+                    >
+                        {date}
+                    </div>
+                ))}
+
+                <div className="header-cell empty-cell"></div>
+                {daysOfWeek.map((day, i) => (
+                    <div className={`header-cell ${selectedVaarCode === (i + 1) ? 'highlight' : ''}`} key={i}>{day}</div>
+                ))}
+
+                {memberList.map((member, rowIndex) => (
+                    <React.Fragment key={rowIndex}>
+                        <div className="header-cell header-name">{member.name}</div>
+                        {daysOfWeek.map((day, colIndex) => {
+                            const assignedPlace = getAssignedPlace(member.name, day);
+                            return (
+                                <div
+                                    className={`grid-box ${selectedVaarCode === (colIndex + 1) ? 'highlight' : ''}`}
+                                    key={`cell-${rowIndex}-${colIndex}`}
+                                >
+                                    <select
+                                        className="cell-dropdown"
+                                        value={assignedPlace}
+                                        onChange={(e) =>
+                                            updateAssignment(member.name, day, e.target.value)
+                                        }
+                                        disabled={!!assignedPlace}
+                                    >
+                                        <option value="">निवडा</option>
+                                        {availablePlaces.map(place => (
+                                            <option key={place.id} value={place.name}>
+                                                {place.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            );
+                        })}
+                    </React.Fragment>
+                ))}
+            </div>
+        </>
+    );
+
     return (
         <div className="wrapper">
-
-            {/* 🔽 Excel Download Button */}
             <div className="excel-button-wrapper">
                 <button className="excel-download" onClick={() => navigate('/download')}>
                     Download Excel 📥
                 </button>
             </div>
 
-            {/* Vaar Code Selector */}
             <div className="vaar-nav">
                 {vaarList.map(vaar => (
                     <button
@@ -124,54 +176,15 @@ function AssignmentGrid() {
                 ))}
             </div>
 
-            {/* Week Navigation */}
             <div className="week-nav">
                 <button onClick={() => setWeekOffset(weekOffset - 1)}>⏮ मागील आठवडा</button>
                 <span>आठवडा {weekNumber}</span>
                 <button onClick={() => setWeekOffset(weekOffset + 1)}>पुढील आठवडा ⏭</button>
             </div>
 
-            {/* Grid Table */}
             <div className="scrollable-grid">
-                <div className="grid-container">
-                    <div className="header-cell week-cell">तारीख</div>
-                    {weekDates.map((date, i) => (
-                        <div className="header-cell date-cell" key={i}>{date}</div>
-                    ))}
-
-                    <div className="header-cell empty-cell"></div>
-                    {daysOfWeek.map((day, i) => (
-                        <div className="header-cell" key={i}>{day}</div>
-                    ))}
-
-                    {members.map((member, rowIndex) => (
-                        <React.Fragment key={rowIndex}>
-                            <div className="header-cell header-name">{member.name}</div>
-                            {daysOfWeek.map((day, colIndex) => {
-                                const assignedPlace = getAssignedPlace(member.name, day);
-                                return (
-                                    <div className="grid-box" key={`cell-${rowIndex}-${colIndex}`}>
-                                        <select
-                                            className="cell-dropdown"
-                                            value={assignedPlace}
-                                            onChange={(e) =>
-                                                updateAssignment(member.name, day, e.target.value)
-                                            }
-                                            disabled={!!assignedPlace}
-                                        >
-                                            <option value="">निवडा</option>
-                                            {availablePlaces.map(place => (
-                                                <option key={place.id} value={place.name}>
-                                                    {place.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                );
-                            })}
-                        </React.Fragment>
-                    ))}
-                </div>
+                {renderGrid(members, 'पुरुष सदस्य')}
+                {renderGrid(femaleMembers, 'महिला सदस्य')}
             </div>
         </div>
     );

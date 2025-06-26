@@ -10,6 +10,7 @@ public class RotationState {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String gender;
     private Integer lastUsedMemberIndex;
     private LocalDateTime updatedAt;
 
@@ -21,6 +22,21 @@ public class RotationState {
         return id;
     }
 
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public void setLastUsedMemberIndex(Integer lastUsedMemberIndex) {
+        this.lastUsedMemberIndex = lastUsedMemberIndex;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
     public int getLastUsedMemberIndex() {
         return lastUsedMemberIndex;
