@@ -12,8 +12,8 @@ function ExcelDownload() {
 
         const endpoint =
             type === "personalized"
-                ? `http://localhost:8081/api/excel/download/personalized/week/${weekNumber}`
-                : `http://localhost:8081/api/excel/download/week/${weekNumber}`;
+                ? `${process.env.REACT_APP_BACKEND_URL}/api/excel/download/personalized/week/${weekNumber}`
+                : `${process.env.REACT_APP_BACKEND_URL}/api/excel/download/week/${weekNumber}`;
 
         const filename =
             type === "personalized"
