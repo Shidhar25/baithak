@@ -4,28 +4,45 @@ import org.springboot_jdbc.baithak.dto.ManualAssignmentRequest;
 import org.springboot_jdbc.baithak.model.places;
 import org.springboot_jdbc.baithak.repository.PlaceRepository;
 import org.springboot_jdbc.baithak.service.AssignmentService;
+import org.springboot_jdbc.baithak.service.PlaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
-//@RestController
-//@RequestMapping("/api/assign")
+@RestController
+@RequestMapping("/api/places")
 public class PlaceController {
 
-//    @Autowired
-//    private PlaceRepository placeRepo;
-//
-//    @GetMapping("/available-places")
-//    public ResponseEntity<List<places>> getAvailablePlaces(
-//            @RequestParam int vaarCode,
-//            @RequestParam int week
-//    ) {
-//        List<places> availablePlaces = placeRepo.findAvailablePlacesForWeek(vaarCode, week);
-//        return ResponseEntity.ok(availablePlaces);
-//    }
+    @Autowired
+    private PlaceService placeService;
 
+    @PostMapping("/add")
+    public places createPlace(@RequestBody places place) {
+        return placeService.create(place);
+    }
+
+    @GetMapping("/All")
+    public List<places> getAllPlaces() {
+        return placeService.getAll();
+    }
+
+    @GetMapping("/{id}")
+    public places getPlaceById(@PathVariable UUID id) {
+        return placeService.getById(id);
+    }
+
+    @PutMapping("/{id}")
+    public places updatePlace(@PathVariable UUID id, @RequestBody places place) {
+        return placeService.update(id, place);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deletePlace(@PathVariable UUID id) {
+        placeService.delete(id);
+    }
 
 
 }
