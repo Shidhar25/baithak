@@ -32,6 +32,9 @@ public class AssignmentController {
             @RequestParam int week
     ) {
         List<Assignment> assignments = service.getAssignmentsByWeekAndVaarCode(week, vaarCode);
+        if (assignments == null) {
+            assignments = List.of(); // return empty list if null
+        }
 
         List<AssignmentDTO> dtoList = assignments.stream()
                 .map(a -> new AssignmentDTO(
@@ -44,6 +47,7 @@ public class AssignmentController {
 
         return ResponseEntity.ok(dtoList);
     }
+
     @GetMapping("/available-places")
     public ResponseEntity<List<places>> getAvailablePlaces(
             @RequestParam int vaarCode,

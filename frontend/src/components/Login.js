@@ -15,7 +15,7 @@ function Login() {
         formData.append("username", username);
         formData.append("password", password);
 
-        const response = await fetch("http://localhost:8081/admin/login", {
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/admin/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",

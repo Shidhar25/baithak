@@ -44,7 +44,7 @@ function AssignmentGrid() {
     const weekNumber = weekOffset + 1;
 
     useEffect(() => {
-        fetch("http://localhost:8081/api/members")
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/members`)
             .then(res => res.json())
             .then(data => {
                 setMembers(data.filter(m => m.gender === 'male'));
@@ -54,12 +54,12 @@ function AssignmentGrid() {
     }, []);
 
     useEffect(() => {
-        fetch(`http://localhost:8081/api/assign/available-places?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/available-places?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
             .then(res => res.json())
             .then(data => setAvailablePlaces(data))
             .catch(err => console.error("Error fetching places:", err));
 
-        fetch(`http://localhost:8081/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
             .then(res => res.json())
             .then(data => setAssignments(data))
             .catch(err => console.error("Error fetching assignments:", err));
@@ -73,7 +73,7 @@ function AssignmentGrid() {
     };
 
     const updateAssignment = (memberName, dayOfWeek, placeName) => {
-        fetch("http://localhost:8081/api/assign/manual", {
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/manual`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -90,11 +90,11 @@ function AssignmentGrid() {
             })
             .then(() => {
                 alert("Assigned!");
-                fetch(`http://localhost:8081/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
+                fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
                     .then(res => res.json())
                     .then(data => setAssignments(data));
 
-                fetch(`http://localhost:8081/api/assign/available-places?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
+                fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/available-places?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
                     .then(res => res.json())
                     .then(data => setAvailablePlaces(data));
             })

@@ -95,24 +95,4 @@ public class Assignment {
     public member getMember() {
         return (member) member;
     }
-
-    @Entity
-    @Table(name = "female_rotation_state")
-    public static class FemaleRotationState {
-        @jakarta.persistence.Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-
-        private int lastUsedMemberIndex;
-
-        private LocalDateTime updatedAt;
-
-        // Getters and setters
-    }
-
-    public static class FemaleMember {
-    }
-
-    public static class FemaleAssignment {
-    }
 }

@@ -105,7 +105,8 @@ public class AssignmentService {
     }
 
     public List<Assignment> getAssignmentsByWeekAndVaarCode(int week, int vaarCode) {
-        return assignmentRepo.findByWeekAndVaarCode(week, vaarCode);
+        return Optional.ofNullable(assignmentRepo.findByWeekAndVaarCode(week, vaarCode))
+                .orElse(List.of());
     }
     public List<places> getAvailablePlaces(int vaarCode, int week) {
         List<places> result = placeRepo.findAvailablePlacesForWeek(vaarCode, week);
