@@ -3,6 +3,7 @@ import org.springboot_jdbc.baithak.service.AdminAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 @RestController
+@CrossOrigin()
 @RequestMapping("/admin")
 public class AdminAuthController {
 
