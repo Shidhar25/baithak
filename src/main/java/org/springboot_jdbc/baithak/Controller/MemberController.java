@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/members")
-@CrossOrigin()
+@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
 public class MemberController {
 
     @Autowired

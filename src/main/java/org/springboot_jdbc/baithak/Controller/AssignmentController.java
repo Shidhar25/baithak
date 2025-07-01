@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/assign")
-@CrossOrigin()
+@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
 public class AssignmentController {
 
     @Autowired
