@@ -105,8 +105,7 @@ public class AssignmentService {
     }
 
     public List<Assignment> getAssignmentsByWeekAndVaarCode(int week, int vaarCode) {
-        return Optional.ofNullable(assignmentRepo.findByWeekAndVaarCode(week, vaarCode))
-                .orElse(List.of());
+        return assignmentRepo.findByWeekAndVaarCode(week, vaarCode);
     }
     public List<places> getAvailablePlaces(int vaarCode, int week) {
         List<places> result = placeRepo.findAvailablePlacesForWeek(vaarCode, week);
@@ -125,6 +124,14 @@ public class AssignmentService {
         if (alreadyAssigned) {
             throw new IllegalArgumentException("This place is already assigned in this week.");
         }
+        boolean vaarConflict = assignmentRepo.existsByMemberIdAndVaarCodeAndWeekNumber(
+                m.getId(), p.getVaarCode(), week
+        );
+        if (vaarConflict) {
+            throw new IllegalArgumentException("This member is already assigned to a place on the same vaar and week.");
+        }
+
+
 
         int startWeek = Math.max(1, week - 9);
         boolean repeated = assignmentRepo.existsInVaarRangeLastWeeks(
