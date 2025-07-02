@@ -120,35 +120,42 @@ public class AssignmentService {
             throw new IllegalArgumentException("Invalid member or place name");
         }
 
+        // Check if place is already assigned
         boolean alreadyAssigned = assignmentRepo.existsByPlaceIdAndWeekNumber(p.getId(), week);
         if (alreadyAssigned) {
             throw new IllegalArgumentException("This place is already assigned in this week.");
         }
-        boolean vaarConflict = assignmentRepo.existsByMemberIdAndVaarCodeAndWeekNumber(
+
+        // Check if member already has assignment for this day/week
+        boolean vaarConflict = assignmentRepo.existsAssignmentByMemberAndVaarCodeAndWeek(
                 m.getId(), p.getVaarCode(), week
         );
         if (vaarConflict) {
-            throw new IllegalArgumentException("This member is already assigned to a place on the same vaar and week.");
+            throw new IllegalArgumentException("This member is already assigned to a place on " + p.getVaarName() + " in week " + week);
         }
 
-
-
+        // Check recent assignment (last 10 weeks)
         int startWeek = Math.max(1, week - 9);
         boolean repeated = assignmentRepo.existsInVaarRangeLastWeeks(
                 m.getId(), p.getId(), p.getVaarCode(), startWeek, week - 1
         );
 
         if (repeated) {
-            throw new IllegalArgumentException("This member had this place in the same vaarCode in the last 10 weeks.");
+            throw new IllegalArgumentException("This member had this place in the same day in the last 10 weeks.");
         }
 
+        // Create new assignment
         Assignment assignment = new Assignment();
         assignment.setId(UUID.randomUUID());
         assignment.setMember(m);
         assignment.setPlace(p);
         assignment.setWeekNumber(week);
-        assignment.setDayOfWeek(p.getVaarName());
-        assignment.setAssignedDate(LocalDate.now());
+        assignment.setDayOfWeek(p.getVaarName()); // Use the place's day
+
+        LocalDate assignmentDate = calculateAssignmentDate(p.getVaarCode(), week);
+        assignment.setAssignmentDate(assignmentDate);
+        assignment.setAssignedDate(LocalDate.now()); // When it was assigned
+
         assignment.setManual(true);
         assignment.setCreatedAt(LocalDateTime.now());
 
@@ -285,9 +292,14 @@ public class AssignmentService {
     }
     public LocalDate calculateAssignmentDate(int vaarCode, int weekNumber) {
         LocalDate today = LocalDate.now();
+
+        // Find the Sunday of the current week
         LocalDate sunday = today.minusDays(today.getDayOfWeek().getValue() % 7);
+
+        // Add (weekNumber - 1) weeks and (vaarCode - 1) days to get the final assignment date
         return sunday.plusWeeks(weekNumber - 1).plusDays(vaarCode - 1);
     }
+
 
 
 

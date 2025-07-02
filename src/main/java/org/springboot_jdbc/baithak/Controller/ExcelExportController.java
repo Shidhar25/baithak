@@ -15,6 +15,7 @@ import java.io.IOException;
 
 @RestController
 @CrossOrigin(origins = "https://baithak-production.up.railway.app/")
+//@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/excel")
 public class ExcelExportController {
 

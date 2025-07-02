@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/members")
 @CrossOrigin(origins = "https://baithak-production.up.railway.app/")
+//@CrossOrigin(origins = "http://localhost:3000")
+@RequestMapping("/api/members")
+
 public class MemberController {
 
     @Autowired

@@ -15,15 +15,18 @@ import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ExcelExportService {
 
     @Autowired
     private AssignmentRepository assignmentRepo;
+
+    // Define the desired export days (excluding शुक्रवार and शनिवार)
+    private static final List<String> EXPORT_DAYS = Arrays.asList(
+            "सोमवार", "मंगळवार", "बुधवार", "गुरुवार", "रविवार"
+    );
 
     public ByteArrayInputStream generateExcelForWeek(int weekNumber) throws IOException {
         List<Assignment> assignments = assignmentRepo.findByWeekNumber(weekNumber);
@@ -35,8 +38,11 @@ public class ExcelExportService {
             String placeName = a.getPlace().getName();
             String day = a.getDayOfWeek();
 
-            scheduleMap.putIfAbsent(memberName, new WeeklyScheduleRow(memberName));
-            scheduleMap.get(memberName).addAssignment(day, placeName);
+            // Only include selected days
+            if (EXPORT_DAYS.contains(day)) {
+                scheduleMap.putIfAbsent(memberName, new WeeklyScheduleRow(memberName));
+                scheduleMap.get(memberName).addAssignment(day, placeName);
+            }
         }
 
         return buildExcel(scheduleMap, weekNumber);
@@ -58,22 +64,25 @@ public class ExcelExportService {
 
             Row header = sheet.createRow(2);
             header.createCell(0).setCellValue("सदस्याचे नाव");
-            String[] days = {"सोमवार", "मंगळवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार"};
-            for (int i = 0; i < days.length; i++) {
-                header.createCell(i + 1).setCellValue(days[i]);
+            for (int i = 0; i < EXPORT_DAYS.size(); i++) {
+                Cell cell = header.createCell(i + 1);
+                cell.setCellValue(EXPORT_DAYS.get(i));
+                cell.setCellStyle(bold);
             }
 
             int rowIdx = 3;
             for (WeeklyScheduleRow row : scheduleMap.values()) {
                 Row r = sheet.createRow(rowIdx++);
                 r.createCell(0).setCellValue(row.getMemberName());
-                for (int i = 0; i < days.length; i++) {
-                    String val = row.getDayPlaceMap().getOrDefault(days[i], "");
+                for (int i = 0; i < EXPORT_DAYS.size(); i++) {
+                    String val = row.getDayPlaceMap().getOrDefault(EXPORT_DAYS.get(i), "");
                     r.createCell(i + 1).setCellValue(val);
                 }
             }
 
-            for (int i = 0; i < 8; i++) sheet.autoSizeColumn(i);
+            for (int i = 0; i <= EXPORT_DAYS.size(); i++) {
+                sheet.autoSizeColumn(i);
+            }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
@@ -93,7 +102,6 @@ public class ExcelExportService {
             String day = a.getDayOfWeek();
             String time = group.equals("महिला") ? "स. ८:४५ ते १०:३०" : "रात्री ८:४५ ते १०:३०";
 
-            // Use date from assignment, else derive from week/day
             LocalDate date = a.getAssignmentDate() != null
                     ? a.getAssignmentDate()
                     : calculateDateFromWeek(weekNumber, day);
@@ -117,13 +125,14 @@ public class ExcelExportService {
                 "रविवार", DayOfWeek.SUNDAY
         );
 
-        LocalDate baseDate = LocalDate.of(2025, 1, 6); // Monday of Week 1
+        LocalDate baseDate = LocalDate.of(2025, 1, 6); // Start of week 1
         LocalDate weekStart = baseDate.plusWeeks(weekNumber - 1);
         DayOfWeek target = map.getOrDefault(marathiDay, DayOfWeek.MONDAY);
 
         while (weekStart.getDayOfWeek() != target) {
             weekStart = weekStart.plusDays(1);
         }
+
         return weekStart;
     }
 

@@ -1,6 +1,7 @@
 package org.springboot_jdbc.baithak.repository;
 
 import org.springboot_jdbc.baithak.model.Assignment;
+import org.springboot_jdbc.baithak.model.places;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -51,13 +52,42 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
                                                     @Param("gender") String gender);
         List<Assignment> findByWeekNumber(int weekNumber);
     @Query("""
+SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
+FROM Assignment a
+WHERE a.member.id = :memberId 
+  AND a.place.vaarName = :vaarName 
+  AND a.weekNumber = :weekNumber
+""")
+    boolean existsByMemberIdAndVaarNameAndWeekNumber(
+            @Param("memberId") UUID memberId,
+            @Param("vaarName") String vaarName,
+            @Param("weekNumber") int weekNumber);
+    @Query("""
     SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
     FROM Assignment a
     WHERE a.member.id = :memberId 
       AND a.place.vaarCode = :vaarCode 
       AND a.weekNumber = :weekNumber
 """)
-    boolean existsByMemberIdAndVaarCodeAndWeekNumber(@Param("memberId") UUID memberId,
-                                                     @Param("vaarCode") int vaarCode,
-                                                     @Param("weekNumber") int weekNumber);
+    boolean existsAssignmentByMemberAndVaarCodeAndWeek(
+            @Param("memberId") UUID memberId,
+            @Param("vaarCode") int vaarCode,
+            @Param("weekNumber") int weekNumber);
+
+
+    @Query("""
+    SELECT a.place 
+    FROM Assignment a 
+    WHERE a.member.id = :memberId 
+      AND a.place.vaarCode = :vaarCode 
+      AND a.weekNumber = :weekNumber
+""")
+    places findAssignedPlace(
+            @Param("memberId") UUID memberId,
+            @Param("vaarCode") int vaarCode,
+            @Param("weekNumber") int weekNumber
+    );
+
+
+
 }
