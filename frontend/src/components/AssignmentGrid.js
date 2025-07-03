@@ -72,9 +72,7 @@ function AssignmentGrid() {
     const updateAssignment = (member, placeName) => {
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/manual`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 memberName: member.name,
                 placeName,
@@ -83,10 +81,7 @@ function AssignmentGrid() {
             })
         })
             .then(async res => {
-                if (!res.ok) {
-                    const errText = await res.text();
-                    throw new Error(errText || "Assignment failed");
-                }
+                if (!res.ok) throw new Error(await res.text() || "Assignment failed");
                 return res.text();
             })
             .then(() => {
@@ -103,9 +98,7 @@ function AssignmentGrid() {
     const undoAssignment = (memberId, memberName, placeName) => {
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/unassign`, {
             method: "DELETE",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ memberName, placeName, week: weekNumber, vaarCode: selectedVaarCode })
         })
             .then(res => {
@@ -178,19 +171,27 @@ function AssignmentGrid() {
                                                     </div>
                                                 ) : (
                                                     availablePlaces.length > 0 ? (
-                                                        <select className="assignment-select" value="" onChange={(e) => updateAssignment(member, e.target.value)}>
+                                                        <select
+                                                            className="assignment-select"
+                                                            value=""
+                                                            onChange={(e) => updateAssignment(member, e.target.value)}
+                                                        >
                                                             <option value="">स्थान निवडा</option>
-                                                            {availablePlaces.map((place) => {
-                                                                const isAllowed = member.gender === "male" || place.femaleAllowed;
-                                                                return (
-                                                                    <option key={place.id} value={place.name} disabled={!isAllowed}>
-                                                                        {place.name} {isAllowed ? '' : '🚫'}
-                                                                    </option>
-                                                                );
-                                                            })}
+                                                            {availablePlaces.map((place) => (
+                                                                <option key={place.id} value={place.name}>{place.name}</option>
+                                                            ))}
                                                         </select>
                                                     ) : (
-                                                        <small className="no-places">❌ उपलब्ध स्थान नाही</small>
+                                                        <div className="assigned-places">
+                                                            <div>✅ सर्व स्थान आधीच नियुक्त:</div>
+                                                            <ul>
+                                                                {assignments
+                                                                    .filter(a => a.vaarCode === selectedVaarCode && a.week === weekNumber)
+                                                                    .map((a, idx) => (
+                                                                        <li key={idx}>{a.placeName}</li>
+                                                                    ))}
+                                                            </ul>
+                                                        </div>
                                                     )
                                                 )
                                             ) : (

@@ -178,61 +178,105 @@ public class ExcelExportService {
             return new ByteArrayInputStream(out.toByteArray());
         }
     }
+    public ByteArrayInputStream generateExcelMatrixWithVaar(int startWeek, int endWeek) throws IOException {
+        List<Assignment> allAssignments = new ArrayList<>();
+        for (int i = startWeek; i <= endWeek; i++) {
+            allAssignments.addAll(assignmentRepo.findByWeekNumber(i));
+        }
 
-//    all row and colums
-public ByteArrayInputStream generateExcelForWeekRange(int startWeek, int endWeek) throws IOException {
-    List<Assignment> allAssignments = new ArrayList<>();
-    for (int i = startWeek; i <= endWeek; i++) {
-        allAssignments.addAll(assignmentRepo.findByWeekNumber(i));
-    }
+        Set<String> members = new TreeSet<>();               // Columns
+        Set<String> places = new LinkedHashSet<>();          // Rows
 
-    // Map: [day][place][memberName]
-    Map<String, Map<String, Set<String>>> vaarPlaceMemberMap = new LinkedHashMap<>();
+        // Map: [place] -> [member] -> date
+        Map<String, Map<String, String>> matrix = new LinkedHashMap<>();
 
-    for (Assignment a : allAssignments) {
-        String vaar = a.getDayOfWeek();
-        if ("शुक्रवार".equals(vaar) || "शनिवार".equals(vaar)) continue;
+        // Map: place -> vaar name & vaar code
+        Map<String, String> placeVaarNameMap = new HashMap<>();
+        Map<String, Integer> placeVaarCodeMap = new HashMap<>();
 
-        String place = a.getPlace().getName();
-        String name = a.getMember().getName();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM");
 
-        vaarPlaceMemberMap
-                .computeIfAbsent(vaar, k -> new LinkedHashMap<>())
-                .computeIfAbsent(place, k -> new LinkedHashSet<>())
-                .add(name);
-    }
+        for (Assignment a : allAssignments) {
+            String member = a.getMember().getName();
+            String place = a.getPlace().getName();
+            String date = a.getAssignmentDate() != null
+                    ? a.getAssignmentDate().format(formatter)
+                    : "";
+            String vaarName = a.getPlace().getVaarName();
+            int vaarCode = a.getPlace().getVaarCode();
 
-    try (Workbook workbook = new XSSFWorkbook()) {
-        Sheet sheet = workbook.createSheet("Week " + startWeek + "-" + endWeek);
+            members.add(member);
+            places.add(place);
 
-        int rowIdx = 0;
-        Row title = sheet.createRow(rowIdx++);
-        title.createCell(0).setCellValue("वार");
-        title.createCell(1).setCellValue("ठिकाण");
-        title.createCell(2).setCellValue("सदस्य");
+            matrix
+                    .computeIfAbsent(place, k -> new HashMap<>())
+                    .put(member, date);
 
-        for (var vaarEntry : vaarPlaceMemberMap.entrySet()) {
-            String vaar = vaarEntry.getKey();
-            for (var placeEntry : vaarEntry.getValue().entrySet()) {
-                String place = placeEntry.getKey();
-                for (String member : placeEntry.getValue()) {
-                    Row r = sheet.createRow(rowIdx++);
-                    r.createCell(0).setCellValue(vaar);
-                    r.createCell(1).setCellValue(place);
-                    r.createCell(2).setCellValue(member);
+            placeVaarNameMap.put(place, vaarName);
+            placeVaarCodeMap.put(place, vaarCode);
+        }
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Week " + startWeek + "-" + endWeek);
+
+            CellStyle[] vaarStyles = new CellStyle[8]; // vaarCode is usually 1–7
+            for (int i = 1; i <= 7; i++) {
+                CellStyle style = workbook.createCellStyle();
+                style.setFillForegroundColor((short) (40 + i * 3));  // some arbitrary different colors
+                style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                vaarStyles[i] = style;
+            }
+
+            // Header row
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("ठिकाण");
+            headerRow.createCell(1).setCellValue("वार");  // vaar name
+
+            int colIdx = 2;
+            for (String member : members) {
+                headerRow.createCell(colIdx++).setCellValue(member);
+            }
+
+            int rowIdx = 1;
+            for (String place : places) {
+                Row row = sheet.createRow(rowIdx++);
+
+                String vaarName = placeVaarNameMap.getOrDefault(place, "");
+                int vaarCode = placeVaarCodeMap.getOrDefault(place, 0);
+
+                Cell placeCell = row.createCell(0);
+                placeCell.setCellValue(place);
+
+                Cell vaarCell = row.createCell(1);
+                vaarCell.setCellValue(vaarName);
+
+                if (vaarCode >= 1 && vaarCode <= 7) {
+                    placeCell.setCellStyle(vaarStyles[vaarCode]);
+                    vaarCell.setCellStyle(vaarStyles[vaarCode]);
+                }
+
+                Map<String, String> assignmentsForPlace = matrix.getOrDefault(place, Collections.emptyMap());
+                colIdx = 2;
+
+                for (String member : members) {
+                    String date = assignmentsForPlace.getOrDefault(member, "");
+                    Cell cell = row.createCell(colIdx++);
+                    cell.setCellValue(date);
+
+                    if (vaarCode >= 1 && vaarCode <= 7) {
+                        cell.setCellStyle(vaarStyles[vaarCode]);
+                    }
                 }
             }
-        }
 
-        for (int i = 0; i < 3; i++) {
-            sheet.autoSizeColumn(i);
-        }
+            for (int i = 0; i <= members.size() + 1; i++) {
+                sheet.autoSizeColumn(i);
+            }
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        workbook.write(out);
-        return new ByteArrayInputStream(out.toByteArray());
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        }
     }
-}
-
 
 }

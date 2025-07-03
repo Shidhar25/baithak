@@ -49,7 +49,7 @@ public class ExcelExportController {
     }
     @GetMapping("/matrix")
     public ResponseEntity<byte[]> downloadWeekRangeExcel(@RequestParam int start, @RequestParam int end) throws IOException {
-        ByteArrayInputStream excel = excelService.generateExcelForWeekRange(start, end);
+        ByteArrayInputStream excel = excelService.generateExcelMatrixWithVaar(start, end);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=assignments_week_" + start + "_to_" + end + ".xlsx");
 
