@@ -5,7 +5,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springboot_jdbc.baithak.dto.PersonScheduleRow;
 import org.springboot_jdbc.baithak.dto.WeeklyScheduleRow;
 import org.springboot_jdbc.baithak.model.Assignment;
+import org.springboot_jdbc.baithak.model.member;
+import org.springboot_jdbc.baithak.model.places;
 import org.springboot_jdbc.baithak.repository.AssignmentRepository;
+import org.springboot_jdbc.baithak.repository.MemberRepository;
+import org.springboot_jdbc.baithak.repository.PlaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +20,17 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ExcelExportService {
 
     @Autowired
     private AssignmentRepository assignmentRepo;
+    @Autowired
+    private MemberRepository memberRepo;
+    @Autowired
+    private PlaceRepository placeRepo;
 
     // Define the desired export days (excluding शुक्रवार and शनिवार)
     private static final List<String> EXPORT_DAYS = Arrays.asList(
@@ -184,36 +193,56 @@ public class ExcelExportService {
             allAssignments.addAll(assignmentRepo.findByWeekNumber(i));
         }
 
-        Set<String> members = new TreeSet<>();               // Columns
-        Set<String> places = new LinkedHashSet<>();          // Rows
+        // fetch all members & all places
+        List<member> allMembersList = memberRepo.findAll();
+        List<places> allPlacesList = placeRepo.findAll();
 
-        // Map: [place] -> [member] -> date
+        // members
+        Set<String> members = allMembersList.stream()
+                .map(member::getName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(TreeSet::new)); // Columns
+
+        // places
+        Set<String> placeNames = allPlacesList.stream()
+                .map(places::getName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new)); // Rows
+
         Map<String, Map<String, String>> matrix = new LinkedHashMap<>();
 
-        // Map: place -> vaar name & vaar code
-        Map<String, String> placeVaarNameMap = new HashMap<>();
-        Map<String, Integer> placeVaarCodeMap = new HashMap<>();
+        Map<String, String> placeVaarNameMap = allPlacesList.stream()
+                .filter(p -> p.getName() != null && p.getVaarName() != null)
+                .collect(Collectors.toMap(
+                        places::getName,
+                        places::getVaarName,
+                        (v1, v2) -> v1 // if duplicate, keep the first one
+                ));
+
+        Map<String, Integer> placeVaarCodeMap = allPlacesList.stream()
+                .filter(p -> p.getName() != null)
+                .collect(Collectors.toMap(
+                        places::getName,
+                        places::getVaarCode,
+                        (v1, v2) -> v1 // if duplicate, keep the first one
+                ));
+
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM");
 
         for (Assignment a : allAssignments) {
-            String member = a.getMember().getName();
-            String place = a.getPlace().getName();
+            String memberName = a.getMember() != null ? a.getMember().getName() : null;
+            String placeName = a.getPlace() != null ? a.getPlace().getName() : null;
+
+            if (memberName == null || placeName == null) continue;
+
             String date = a.getAssignmentDate() != null
                     ? a.getAssignmentDate().format(formatter)
                     : "";
-            String vaarName = a.getPlace().getVaarName();
-            int vaarCode = a.getPlace().getVaarCode();
-
-            members.add(member);
-            places.add(place);
 
             matrix
-                    .computeIfAbsent(place, k -> new HashMap<>())
-                    .put(member, date);
-
-            placeVaarNameMap.put(place, vaarName);
-            placeVaarCodeMap.put(place, vaarCode);
+                    .computeIfAbsent(placeName, k -> new HashMap<>())
+                    .put(memberName, date);
         }
 
         try (Workbook workbook = new XSSFWorkbook()) {
@@ -222,7 +251,7 @@ public class ExcelExportService {
             CellStyle[] vaarStyles = new CellStyle[8]; // vaarCode is usually 1–7
             for (int i = 1; i <= 7; i++) {
                 CellStyle style = workbook.createCellStyle();
-                style.setFillForegroundColor((short) (40 + i * 3));  // some arbitrary different colors
+                style.setFillForegroundColor((short) (40 + i * 3));  // arbitrary colors
                 style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
                 vaarStyles[i] = style;
             }
@@ -238,7 +267,7 @@ public class ExcelExportService {
             }
 
             int rowIdx = 1;
-            for (String place : places) {
+            for (String place : placeNames) {
                 Row row = sheet.createRow(rowIdx++);
 
                 String vaarName = placeVaarNameMap.getOrDefault(place, "");
@@ -267,6 +296,7 @@ public class ExcelExportService {
                         cell.setCellStyle(vaarStyles[vaarCode]);
                     }
                 }
+
             }
 
             for (int i = 0; i <= members.size() + 1; i++) {
@@ -278,6 +308,7 @@ public class ExcelExportService {
             return new ByteArrayInputStream(out.toByteArray());
         }
     }
+
 
 
 //    HIstory of every person

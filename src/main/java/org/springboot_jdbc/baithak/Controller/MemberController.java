@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
+@CrossOrigin(origins = "https://baithak-sigma.vercel.app/")
 //@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/members")
 

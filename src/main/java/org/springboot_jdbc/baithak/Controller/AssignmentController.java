@@ -19,9 +19,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+//@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/assign")
-//@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
+@CrossOrigin(origins = "https://baithak-sigma.vercel.app/")
 public class AssignmentController {
 
     @Autowired

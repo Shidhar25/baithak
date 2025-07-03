@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 @RestController
 //@CrossOrigin(origins = "http://localhost:3000")
-@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
+@CrossOrigin(origins = "https://baithak-sigma.vercel.app/")
 @RequestMapping("/admin")
 public class AdminAuthController {
 
