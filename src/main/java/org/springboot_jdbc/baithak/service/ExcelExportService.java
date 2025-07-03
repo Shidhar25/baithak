@@ -178,4 +178,61 @@ public class ExcelExportService {
             return new ByteArrayInputStream(out.toByteArray());
         }
     }
+
+//    all row and colums
+public ByteArrayInputStream generateExcelForWeekRange(int startWeek, int endWeek) throws IOException {
+    List<Assignment> allAssignments = new ArrayList<>();
+    for (int i = startWeek; i <= endWeek; i++) {
+        allAssignments.addAll(assignmentRepo.findByWeekNumber(i));
+    }
+
+    // Map: [day][place][memberName]
+    Map<String, Map<String, Set<String>>> vaarPlaceMemberMap = new LinkedHashMap<>();
+
+    for (Assignment a : allAssignments) {
+        String vaar = a.getDayOfWeek();
+        if ("शुक्रवार".equals(vaar) || "शनिवार".equals(vaar)) continue;
+
+        String place = a.getPlace().getName();
+        String name = a.getMember().getName();
+
+        vaarPlaceMemberMap
+                .computeIfAbsent(vaar, k -> new LinkedHashMap<>())
+                .computeIfAbsent(place, k -> new LinkedHashSet<>())
+                .add(name);
+    }
+
+    try (Workbook workbook = new XSSFWorkbook()) {
+        Sheet sheet = workbook.createSheet("Week " + startWeek + "-" + endWeek);
+
+        int rowIdx = 0;
+        Row title = sheet.createRow(rowIdx++);
+        title.createCell(0).setCellValue("वार");
+        title.createCell(1).setCellValue("ठिकाण");
+        title.createCell(2).setCellValue("सदस्य");
+
+        for (var vaarEntry : vaarPlaceMemberMap.entrySet()) {
+            String vaar = vaarEntry.getKey();
+            for (var placeEntry : vaarEntry.getValue().entrySet()) {
+                String place = placeEntry.getKey();
+                for (String member : placeEntry.getValue()) {
+                    Row r = sheet.createRow(rowIdx++);
+                    r.createCell(0).setCellValue(vaar);
+                    r.createCell(1).setCellValue(place);
+                    r.createCell(2).setCellValue(member);
+                }
+            }
+        }
+
+        for (int i = 0; i < 3; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        workbook.write(out);
+        return new ByteArrayInputStream(out.toByteArray());
+    }
+}
+
+
 }

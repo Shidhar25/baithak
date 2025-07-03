@@ -14,8 +14,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 @RestController
-@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
-//@CrossOrigin(origins = "http://localhost:3000")
+//@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/excel")
 public class ExcelExportController {
 
@@ -47,6 +47,18 @@ public class ExcelExportController {
             return ResponseEntity.internalServerError().build();
         }
     }
+    @GetMapping("/matrix")
+    public ResponseEntity<byte[]> downloadWeekRangeExcel(@RequestParam int start, @RequestParam int end) throws IOException {
+        ByteArrayInputStream excel = excelService.generateExcelForWeekRange(start, end);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=assignments_week_" + start + "_to_" + end + ".xlsx");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(excel.readAllBytes());
+    }
+
 
 
 

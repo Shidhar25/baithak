@@ -19,9 +19,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-//@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/assign")
-@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
+//@CrossOrigin(origins = "https://baithak-production.up.railway.app/")
 public class AssignmentController {
 
     @Autowired
@@ -31,9 +31,13 @@ public class AssignmentController {
 
 
     @PostMapping("/run")
-    public ResponseEntity<String> runAssignment(@RequestParam int vaarCode, @RequestParam int week) {
-        service.assignWeekly(vaarCode, week);
-        return ResponseEntity.ok("Assignment completed for vaarCode=" + vaarCode);
+    public ResponseEntity<String> runAssignment(
+            @RequestParam int vaarCode,
+            @RequestParam int week
+    ) {
+        service.assignWithGenderLogic(vaarCode, week);
+
+        return ResponseEntity.ok("Assignment done for vaarCode=" + vaarCode + ", week=" + week);
     }
     @GetMapping("/view")
     public ResponseEntity<List<AssignmentDTO>> viewAssignments(
@@ -67,9 +71,19 @@ public class AssignmentController {
     }
     @PostMapping("/manual")
     public ResponseEntity<String> manualAssign(@RequestBody ManualAssignmentRequest request) {
-        service.manualAssign(request.getMemberName(), request.getPlaceName(), request.getWeek());
-        return ResponseEntity.ok("Manually assigned.");
+        try {
+            service.manualAssign(request.getMemberName(), request.getPlaceName(), request.getWeek());
+            return ResponseEntity.ok("Manually assigned.");
+        } catch (IllegalArgumentException e) {
+            // Bad input from frontend (400 Bad Request)
+            return ResponseEntity.badRequest().body("❌ " + e.getMessage());
+        } catch (Exception e) {
+            // Unexpected error (500 Internal Server Error)
+            e.printStackTrace(); // Log error for debugging
+            return ResponseEntity.status(500).body("❌ Internal server error: " + e.getMessage());
+        }
     }
+
     @DeleteMapping("/assignments/clear")
     public ResponseEntity<String> deleteAllAssignments() {
         assignmentRepo.deleteAll();

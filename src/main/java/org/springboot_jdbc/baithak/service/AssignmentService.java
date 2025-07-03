@@ -120,176 +120,128 @@ public class AssignmentService {
             throw new IllegalArgumentException("Invalid member or place name");
         }
 
+        // Validate gender eligibility
+        if (!Boolean.TRUE.equals(p.getFemaleAllowed()) && m.getGender().equalsIgnoreCase("female")) {
+            throw new IllegalArgumentException("This place is not allowed for female members.");
+        }
+
+
         // Check if place is already assigned
         boolean alreadyAssigned = assignmentRepo.existsByPlaceIdAndWeekNumber(p.getId(), week);
         if (alreadyAssigned) {
             throw new IllegalArgumentException("This place is already assigned in this week.");
         }
 
-        // Check if member already has assignment for this day/week
+        // Check if member already has assignment for that vaar
         boolean vaarConflict = assignmentRepo.existsAssignmentByMemberAndVaarCodeAndWeek(
                 m.getId(), p.getVaarCode(), week
         );
         if (vaarConflict) {
-            throw new IllegalArgumentException("This member is already assigned to a place on " + p.getVaarName() + " in week " + week);
+            throw new IllegalArgumentException("This member already has an assignment on " + p.getVaarName());
         }
 
-        // Check recent assignment (last 10 weeks)
+        // Check recent repetition
         int startWeek = Math.max(1, week - 9);
         boolean repeated = assignmentRepo.existsInVaarRangeLastWeeks(
                 m.getId(), p.getId(), p.getVaarCode(), startWeek, week - 1
         );
-
         if (repeated) {
-            throw new IllegalArgumentException("This member had this place in the same day in the last 10 weeks.");
+            throw new IllegalArgumentException("This member already had this place on same vaar in last 10 weeks.");
         }
 
-        // Create new assignment
-        Assignment assignment = new Assignment();
-        assignment.setId(UUID.randomUUID());
-        assignment.setMember(m);
-        assignment.setPlace(p);
-        assignment.setWeekNumber(week);
-        assignment.setDayOfWeek(p.getVaarName()); // Use the place's day
-
-        LocalDate assignmentDate = calculateAssignmentDate(p.getVaarCode(), week);
-        assignment.setAssignmentDate(assignmentDate);
-        assignment.setAssignedDate(LocalDate.now()); // When it was assigned
-
-        assignment.setManual(true);
-        assignment.setCreatedAt(LocalDateTime.now());
-
-        assignmentRepo.save(assignment);
-    }
-    public void assignWithFemalePriority(int vaarCode, int week) {
-        List<member> allMembers = memberRepo.findAllByOrderByNameAsc();
-        List<member> femaleMembers = allMembers.stream()
-                .filter(m -> m.getGender().equalsIgnoreCase("female"))
-                .toList();
-        List<member> maleMembers = allMembers.stream()
-                .filter(m -> m.getGender().equalsIgnoreCase("male"))
-                .toList();
-
-        List<places> allPlaces = placeRepo.findByVaarCode(vaarCode);
-        List<places> femaleAllowedPlaces = allPlaces.stream()
-                .filter(places::getFemaleAllowed)
-                .toList();
-
-        Set<UUID> assignedPlaces = new HashSet<>();
-        Random random = new Random();
-
-        // Assign 2–3 places to each female
-        for (member female : femaleMembers) {
-            int count = 2 + random.nextInt(2); // 2 or 3
-            int assigned = 0;
-            for (places place : femaleAllowedPlaces) {
-                if (assignedPlaces.contains(place.getId())) continue;
-
-                boolean recent = assignmentRepo.existsRecentAssignment(female.getId(), place.getId(), week - 9);
-                boolean alreadyThisWeek = assignmentRepo.wasAssignedThisWeek(female.getId(), week);
-
-                if (!recent && !alreadyThisWeek) {
-                    Assignment a = new Assignment();
-                    a.setId(UUID.randomUUID());
-                    a.setMember(female);
-                    a.setPlace(place);
-                    a.setAssignedDate(LocalDate.now());
-                    a.setDayOfWeek(place.getVaarName());
-                    a.setWeekNumber(week);
-                    a.setManual(false);
-                    a.setCreatedAt(LocalDateTime.now());
-                    assignmentRepo.save(a);
-
-                    assignedPlaces.add(place.getId());
-                    if (++assigned >= count) break;
-                }
-            }
-        }
-
-        // Assign remaining places to male members
-        List<places> remaining = allPlaces.stream()
-                .filter(p -> !assignedPlaces.contains(p.getId()))
-                .toList();
-
-        assignRemainingToMales(maleMembers, remaining, vaarCode, week);
-    }
-    private void assignRemainingToMales(List<member> maleMembers, List<places> places, int vaarCode, int week) {
-        RotationState state = rotationRepo.getLastStateForGender("male");
-        int pointer = (state != null) ? state.getLastUsedMemberIndex() : 0;
-        int total = maleMembers.size();
-
-        for (places p : places) {
-            int attempts = 0;
-            boolean assigned = false;
-
-            while (attempts < total) {
-                member m = maleMembers.get(pointer);
-                boolean recent = assignmentRepo.existsRecentAssignment(m.getId(), p.getId(), week - 9);
-                boolean already = assignmentRepo.wasAssignedThisWeek(m.getId(), week);
-
-                if (!recent && !already) {
-                    Assignment a = new Assignment();
-                    a.setId(UUID.randomUUID());
-                    a.setMember(m);
-                    a.setPlace(p);
-                    a.setAssignedDate(LocalDate.now());
-                    a.setDayOfWeek(p.getVaarName());
-                    a.setWeekNumber(week);
-                    a.setManual(false);
-                    a.setCreatedAt(LocalDateTime.now());
-                    assignmentRepo.save(a);
-
-                    assigned = true;
-                    break;
-                }
-
-                pointer = (pointer + 1) % total;
-                attempts++;
-            }
-
-            if (!assigned) System.out.println("Skipped place: " + p.getName());
-        }
-
-        RotationState newState = new RotationState();
-        newState.setGender("male");
-        newState.setLastUsedMemberIndex(pointer);
-        newState.setUpdatedAt(LocalDateTime.now());
-        rotationRepo.save(newState);
-    }
-    public void assignFemaleManually(String memberName, String placeName, String dayOfWeek, int weekNumber) {
-        member m = memberRepo.findByName(memberName);
-        places p = placeRepo.findByName(placeName);
-
-        if (m == null || p == null) {
-            throw new IllegalArgumentException("Invalid member or place name");
-        }
-
-        if (!p.getVaarName().equalsIgnoreCase(dayOfWeek)) {
-            throw new IllegalArgumentException("Day mismatch: Place is not assigned to given vaar");
-        }
-
-        boolean alreadyAssigned = assignmentRepo.existsByPlaceIdAndWeekNumber(p.getId(), weekNumber);
-        if (alreadyAssigned) {
-            throw new IllegalArgumentException("This place is already assigned in this week.");
-        }
-
-        boolean recent = assignmentRepo.existsRecentAssignment(m.getId(), p.getId(), weekNumber - 9);
-        if (recent) {
-            throw new IllegalArgumentException("This member had this place in last 10 weeks.");
-        }
-
+        // Save assignment
         Assignment a = new Assignment();
         a.setId(UUID.randomUUID());
         a.setMember(m);
         a.setPlace(p);
         a.setAssignedDate(LocalDate.now());
-        a.setDayOfWeek(dayOfWeek);
-        a.setWeekNumber(weekNumber);
+        a.setAssignmentDate(calculateAssignmentDate(p.getVaarCode(), week));
+        a.setDayOfWeek(p.getVaarName());
+        a.setWeekNumber(week);
         a.setManual(true);
         a.setCreatedAt(LocalDateTime.now());
 
         assignmentRepo.save(a);
     }
+    public void assignWithGenderLogic(int vaarCode, int week) {
+        List<places> allPlaces = placeRepo.findByVaarCode(vaarCode);
+        List<member> allMembers = memberRepo.findAllByOrderByNameAsc();
+
+        // Split members
+        List<member> femaleMembers = allMembers.stream()
+                .filter(m -> m.getGender().equalsIgnoreCase("female"))
+                .toList();
+
+        List<member> maleMembers = allMembers.stream()
+                .filter(m -> m.getGender().equalsIgnoreCase("male"))
+                .toList();
+
+        // Split places
+        List<places> femaleAllowedPlaces = allPlaces.stream()
+                .filter(p -> Boolean.TRUE.equals(p.getFemaleAllowed()))
+                .toList();
+
+        List<places> remainingPlaces = new ArrayList<>(allPlaces); // include all initially
+        Set<UUID> assignedPlaceIds = new HashSet<>();
+
+        // Step 1: Assign female members to female-allowed places
+        int fIdx = 0;
+        for (places place : femaleAllowedPlaces) {
+            for (int attempts = 0; attempts < femaleMembers.size(); attempts++) {
+                member f = femaleMembers.get(fIdx);
+
+                boolean recent = assignmentRepo.existsRecentAssignment(f.getId(), place.getId(), week - 9);
+                boolean alreadyThisWeek = assignmentRepo.wasAssignedThisWeek(f.getId(), week);
+
+                if (!recent && !alreadyThisWeek) {
+                    assign(place, f, week);
+                    assignedPlaceIds.add(place.getId());
+                    break;
+                }
+
+                fIdx = (fIdx + 1) % femaleMembers.size();
+            }
+        }
+
+        // Step 2: Assign remaining unassigned places to male members
+        List<places> unassignedPlaces = remainingPlaces.stream()
+                .filter(p -> !assignedPlaceIds.contains(p.getId()))
+                .toList();
+
+        int mIdx = 0;
+        for (places place : unassignedPlaces) {
+            for (int attempts = 0; attempts < maleMembers.size(); attempts++) {
+                member m = maleMembers.get(mIdx);
+
+                boolean recent = assignmentRepo.existsRecentAssignment(m.getId(), place.getId(), week - 9);
+                boolean alreadyThisWeek = assignmentRepo.wasAssignedThisWeek(m.getId(), week);
+
+                if (!recent && !alreadyThisWeek) {
+                    assign(place, m, week);
+                    assignedPlaceIds.add(place.getId());
+                    break;
+                }
+
+                mIdx = (mIdx + 1) % maleMembers.size();
+            }
+        }
+    }
+
+    private void assign(places place, member member, int week) {
+        Assignment a = new Assignment();
+        a.setId(UUID.randomUUID());
+        a.setPlace(place);
+        a.setMember(member);
+        a.setWeekNumber(week);
+        a.setDayOfWeek(place.getVaarName());
+        a.setAssignedDate(LocalDate.now());
+        a.setAssignmentDate(calculateAssignmentDate(place.getVaarCode(), week));
+        a.setManual(false);
+        a.setCreatedAt(LocalDateTime.now());
+
+        assignmentRepo.save(a);
+    }
+
     public LocalDate calculateAssignmentDate(int vaarCode, int weekNumber) {
         LocalDate today = LocalDate.now();
 

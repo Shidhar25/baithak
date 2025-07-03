@@ -20,7 +20,7 @@ public class places {
     @Column(nullable = false)
     private String name;
     @Column(name = "is_female_allowed")
-    private Boolean isFemaleAllowed = false;
+    private Boolean femaleAllowed = false;
     @Column(name = "vaar_code")
     private Integer vaarCode;
 
@@ -53,11 +53,11 @@ public class places {
     }
 
     public Boolean getFemaleAllowed() {
-        return isFemaleAllowed;
+        return femaleAllowed;
     }
 
     public void setFemaleAllowed(Boolean femaleAllowed) {
-        isFemaleAllowed = femaleAllowed;
+        this.femaleAllowed = femaleAllowed;
     }
 
     public Integer getVaarCode() {
