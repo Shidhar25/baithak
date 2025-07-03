@@ -1,9 +1,21 @@
 package org.springboot_jdbc.baithak.dto;
 
+import jakarta.persistence.Column;
+
 public class ManualAssignmentRequest {
     private String memberName;
     private String placeName;
     private int week;
+    @Column(name = "force_assigned")
+    private boolean confirmIfRepeated = false;
+
+    public boolean isConfirmIfRepeated() {
+        return confirmIfRepeated;
+    }
+
+    public void setConfirmIfRepeated(boolean confirmIfRepeated) {
+        this.confirmIfRepeated = confirmIfRepeated;
+    }
 
     public String getMemberName() {
         return memberName;

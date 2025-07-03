@@ -27,6 +27,8 @@ public class Assignment {
     private LocalDateTime createdAt;
     @Column(name = "assignment_date")
     private LocalDate assignmentDate;
+    @Column(name = "force_assigned")
+    private Boolean confirmIfRepeated;
 
     public LocalDate getAssignmentDate() {
         return assignmentDate;
@@ -94,5 +96,13 @@ public class Assignment {
     }
     public member getMember() {
         return (member) member;
+    }
+
+    public boolean isConfirmIfRepeated() {
+        return confirmIfRepeated;
+    }
+
+    public void setConfirmIfRepeated(boolean confirmIfRepeated) {
+        this.confirmIfRepeated = confirmIfRepeated;
     }
 }

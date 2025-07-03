@@ -112,27 +112,25 @@ public class AssignmentService {
         System.out.println("Available places for vaarCode=" + vaarCode + ", week=" + week + ": " + result.size());
         return result;
     }
-    public void manualAssign(String memberName, String placeName, int week) {
-        member m = memberRepo.findByName(memberName);
-        places p = placeRepo.findByName(placeName);
+    public boolean manualAssign(String memberName, String placeName, int week) {
+        member m = memberRepo.findByNameIgnoreCase(memberName.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid member name: " + memberName));
 
-        if (m == null || p == null) {
-            throw new IllegalArgumentException("Invalid member or place name");
-        }
+        places p = placeRepo.findByNameIgnoreCase(placeName.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid place name: " + placeName));
 
         // Validate gender eligibility
         if (!Boolean.TRUE.equals(p.getFemaleAllowed()) && m.getGender().equalsIgnoreCase("female")) {
             throw new IllegalArgumentException("This place is not allowed for female members.");
         }
 
-
-        // Check if place is already assigned
+        // Check if place is already assigned this week
         boolean alreadyAssigned = assignmentRepo.existsByPlaceIdAndWeekNumber(p.getId(), week);
         if (alreadyAssigned) {
             throw new IllegalArgumentException("This place is already assigned in this week.");
         }
 
-        // Check if member already has assignment for that vaar
+        // Check if member already has an assignment for that vaar this week
         boolean vaarConflict = assignmentRepo.existsAssignmentByMemberAndVaarCodeAndWeek(
                 m.getId(), p.getVaarCode(), week
         );
@@ -140,16 +138,17 @@ public class AssignmentService {
             throw new IllegalArgumentException("This member already has an assignment on " + p.getVaarName());
         }
 
-        // Check recent repetition
+        // Check for repetition within the past 10 weeks
         int startWeek = Math.max(1, week - 9);
         boolean repeated = assignmentRepo.existsInVaarRangeLastWeeks(
                 m.getId(), p.getId(), p.getVaarCode(), startWeek, week - 1
         );
+
         if (repeated) {
-            throw new IllegalArgumentException("This member already had this place on same vaar in last 10 weeks.");
+            System.out.println("⚠️ This member already had this place on the same vaar between week "
+                    + startWeek + " and week " + (week - 1));
         }
 
-        // Save assignment
         Assignment a = new Assignment();
         a.setId(UUID.randomUUID());
         a.setMember(m);
@@ -160,9 +159,14 @@ public class AssignmentService {
         a.setWeekNumber(week);
         a.setManual(true);
         a.setCreatedAt(LocalDateTime.now());
+        a.setConfirmIfRepeated(repeated);
 
         assignmentRepo.save(a);
+
+        return repeated;
     }
+
+
     public void assignWithGenderLogic(int vaarCode, int week) {
         List<places> allPlaces = placeRepo.findByVaarCode(vaarCode);
         List<member> allMembers = memberRepo.findAllByOrderByNameAsc();

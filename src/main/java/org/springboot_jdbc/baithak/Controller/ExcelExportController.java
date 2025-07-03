@@ -48,15 +48,24 @@ public class ExcelExportController {
         }
     }
     @GetMapping("/matrix")
-    public ResponseEntity<byte[]> downloadWeekRangeExcel(@RequestParam int start, @RequestParam int end) throws IOException {
-        ByteArrayInputStream excel = excelService.generateExcelMatrixWithVaar(start, end);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=assignments_week_" + start + "_to_" + end + ".xlsx");
+    public ResponseEntity<?> downloadMatrix(
+            @RequestParam int start,
+            @RequestParam int end) {
+        try {
+            ByteArrayInputStream stream = excelService.generateExcelMatrixWithVaar(start, end);
+            InputStreamResource resource = new InputStreamResource(stream);
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(excel.readAllBytes());
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=matrix.xlsx");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.parseMediaType("application/vnd.ms-excel"))
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("❌ Failed to generate excel: " + e.getMessage());
+        }
     }
     @GetMapping("/history")
     public ResponseEntity<InputStreamResource> downloadMemberHistory(

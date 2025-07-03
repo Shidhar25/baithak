@@ -32,8 +32,8 @@ function AssignmentGrid() {
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/members`)
             .then(res => res.json())
             .then(data => {
-                setMembers(data.filter(m => m.gender === 'male'));
-                setFemaleMembers(data.filter(m => m.gender === 'female'));
+                setMembers(Array.isArray(data) ? data.filter(m => m.gender === 'male') : []);
+                setFemaleMembers(Array.isArray(data) ? data.filter(m => m.gender === 'female') : []);
             })
             .catch(err => console.error("Error fetching members:", err));
     }, []);
@@ -41,13 +41,27 @@ function AssignmentGrid() {
     useEffect(() => {
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/available-places?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
             .then(res => res.json())
-            .then(setAvailablePlaces)
+            .then(data => {
+                setAvailablePlaces(Array.isArray(data) ? data : []);
+            })
             .catch(err => console.error("Error fetching places:", err));
 
         fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/view?vaarCode=${selectedVaarCode}&week=${weekNumber}`)
             .then(res => res.json())
-            .then(setAssignments)
-            .catch(err => console.error("Error fetching assignments:", err));
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setAssignments(data);
+                } else if (Array.isArray(data.data)) {
+                    setAssignments(data.data);
+                } else {
+                    console.error("Unexpected assignments response", data);
+                    setAssignments([]);
+                }
+            })
+            .catch(err => {
+                console.error("Error fetching assignments:", err);
+                setAssignments([]);
+            });
 
         fetchAssignedPlaces();
     }, [selectedVaarCode, weekNumber, members.length, femaleMembers.length]);
@@ -58,7 +72,7 @@ function AssignmentGrid() {
             allMembers.map(member =>
                 fetch(`${process.env.REACT_APP_BACKEND_URL}/api/assign/assigned-place?memberId=${member.id}&vaarCode=${selectedVaarCode}&weekNumber=${weekNumber}`)
                     .then(res => res.json())
-                    .then(data => ({ id: member.id, place: data?.name || null }))
+                    .then(data => ({ id: member.id, place: data?.placeName || null }))
                     .catch(() => ({ id: member.id, place: null }))
             )
         );
@@ -81,18 +95,26 @@ function AssignmentGrid() {
             })
         })
             .then(async res => {
-                if (!res.ok) throw new Error(await res.text() || "Assignment failed");
-                return res.text();
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(errorText);
+                }
+                return res.json();
             })
-            .then(() => {
+            .then(response => {
                 setAssignedInfo(prev => ({ ...prev, [member.id]: placeName }));
                 setAvailablePlaces(prev => prev.filter(p => p.name !== placeName));
                 setAssignments(prev => [...prev, { memberName: member.name, placeName, vaarCode: selectedVaarCode, week: weekNumber }]);
                 setHistory(prev => [...prev, `✅ ${member.name} assigned to ${placeName} (Week ${weekNumber})`]);
+
+                if (response.repeated) {
+                    alert(`⚠️ ${member.name} has already been assigned to ${placeName} in the past 10 weeks.`);
+                }
             })
             .catch(err => {
                 alert(`❌ ${member.name} → ${placeName}\nError: ${err.message}`);
             });
+
     };
 
     const undoAssignment = (memberId, memberName, placeName) => {
@@ -185,7 +207,7 @@ function AssignmentGrid() {
                                                         <div className="assigned-places">
                                                             <div>✅ सर्व स्थान आधीच नियुक्त:</div>
                                                             <ul>
-                                                                {assignments
+                                                                {(assignments || [])
                                                                     .filter(a => a.vaarCode === selectedVaarCode && a.week === weekNumber)
                                                                     .map((a, idx) => (
                                                                         <li key={idx}>{a.placeName}</li>

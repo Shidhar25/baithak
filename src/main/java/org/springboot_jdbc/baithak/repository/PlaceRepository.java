@@ -19,4 +19,5 @@ public interface PlaceRepository extends JpaRepository<places, UUID> {
     List<places> findAvailablePlacesForWeek(@Param("vaarCode") int vaarCode, @Param("week") int week);
     places findByName(String name);
 
+    Optional<places> findByNameIgnoreCase(String name);
 }
