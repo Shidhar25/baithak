@@ -89,5 +89,7 @@ WHERE a.member.id = :memberId
     );
 
 
+    List<Assignment> findByMemberNameOrderByWeekNumberAsc(String memberName);
+
 
 }

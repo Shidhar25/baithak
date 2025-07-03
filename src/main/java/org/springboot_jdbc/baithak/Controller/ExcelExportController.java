@@ -58,6 +58,20 @@ public class ExcelExportController {
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(excel.readAllBytes());
     }
+    @GetMapping("/history")
+    public ResponseEntity<InputStreamResource> downloadMemberHistory(
+            @RequestParam String memberName) throws IOException {
+        ByteArrayInputStream in = excelService.generateMemberHistory(memberName);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=" + memberName + "_history.xlsx");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new InputStreamResource(in));
+    }
+
 
 
 

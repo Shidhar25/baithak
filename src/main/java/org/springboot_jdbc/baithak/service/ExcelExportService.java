@@ -279,4 +279,39 @@ public class ExcelExportService {
         }
     }
 
+
+//    HIstory of every person
+
+    public ByteArrayInputStream generateMemberHistory(String memberName) throws IOException {
+        List<Assignment> history = assignmentRepo.findByMemberNameOrderByWeekNumberAsc(memberName);
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("History");
+
+            Row header = sheet.createRow(0);
+            header.createCell(0).setCellValue("Week");
+            header.createCell(1).setCellValue("Vaar");
+            header.createCell(2).setCellValue("Place");
+            header.createCell(3).setCellValue("Assignment Date");
+
+            int rowIdx = 1;
+            for (Assignment a : history) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(a.getWeekNumber());
+                row.createCell(1).setCellValue(a.getDayOfWeek());
+                row.createCell(2).setCellValue(a.getPlace().getName());
+                row.createCell(3).setCellValue(a.getAssignmentDate().toString());
+            }
+
+            for (int i = 0; i < 4; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        }
+    }
+
+
 }
