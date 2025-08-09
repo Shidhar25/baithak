@@ -1,56 +1,80 @@
-# 📖 Baithak Project
+# 📖 Baithak Assignment Management System
 
 ## 📌 Overview
-The **Baithak Project** is a scheduling and information management system designed to store and manage **Shri Baithak** details, including:
-- Baithak type (e.g., पुरुष, महिला, mixed)
-- Location (e.g., खोपोली, शिळफाटा)
-- Timing and day of the week
-- Special service requirements or other event-specific data
-
-The system uses **PostgreSQL** for storing structured data and can be integrated with web or desktop applications for management and viewing.
-
----
-
-## 🎯 Features
-- Store **Baithak schedules** with timings and days.
-- Organize by **Baithak type**, location, and code.
-- Easy retrieval for reports or display boards.
-- Scalable for multiple locations and timings.
-- Query support for custom filters (e.g., day, type, location).
+The **Baithak Assignment Management System** is designed to manage member assignments to different Baithaks (places) on specific days, times, and rotation patterns.  
+It supports:
+- Scheduling members to places.
+- Automatic rotation logic.
+- Manual overrides for special assignments.
+- Maintaining historical assignment records.
 
 ---
 
 ## 🗂 Database Structure
-**Table:** `baithak_schedule`
 
-| Column Name         | Data Type    | Description                                |
-|---------------------|-------------|--------------------------------------------|
-| `baithak_code`      | INT         | Unique ID for each Baithak                 |
-| `baithak_type`      | TEXT        | Type of Baithak (e.g., पुरुष, महिला)       |
-| `baithak_name`      | TEXT        | Location name                              |
-| `timing_code`       | INT         | Unique timing reference code               |
-| `time`              | TEXT        | Time slot (e.g., रात्री ७:४५ ते १०:३०)     |
-| `vaar_code`         | INT         | Unique code for the day of the week        |
-| `vaar_name`         | TEXT        | Day of the week (e.g., सोमवार)            |
+The system uses **four tables**:
+
+### 1️⃣ `members`
+Stores details of all registered members.
+
+| Column         | Type           | Description |
+|----------------|---------------|-------------|
+| `id`           | BIGINT (PK)   | Unique identifier for each member. |
+| `name`         | VARCHAR       | Member's full name. |
+| `gender`       | VARCHAR       | Gender of the member (`पुरुष`, `महिला`, etc.). |
+| `phone_number` | VARCHAR       | Contact number. |
+| `created_at`   | TIMESTAMP     | Record creation time. |
 
 ---
 
-## 🛠 Setup
+### 2️⃣ `places`
+Stores all Baithak locations and schedule info.
 
-### 1️⃣ Prerequisites
-- [PostgreSQL](https://www.postgresql.org/download/) installed
-- Basic knowledge of SQL
+| Column           | Type        | Description |
+|------------------|------------|-------------|
+| `id`             | BIGINT (PK)| Unique ID for the place. |
+| `name`           | VARCHAR    | Place name (e.g., खोपोली). |
+| `female_allowed` | BOOLEAN    | Whether female members can be assigned. |
+| `vaar_code`      | INT        | Numeric day-of-week code. |
+| `vaar_name`      | VARCHAR    | Day of the week in text (e.g., सोमवार). |
+| `timing_code`    | INT        | Unique code for time slot. |
+| `time_slot`      | VARCHAR    | Human-readable time slot. |
+| `created_at`     | TIMESTAMP  | Record creation time. |
 
-### 2️⃣ Database Creation
-Run the following SQL command to create the table:
+---
 
-```sql
-CREATE TABLE baithak_schedule (
-    baithak_code INT,
-    baithak_type TEXT,
-    baithak_name TEXT,
-    timing_code INT,
-    time TEXT,
-    vaar_code INT,
-    vaar_name TEXT
-);
+### 3️⃣ `assignments`
+Stores member-to-place assignments.
+
+| Column             | Type         | Description |
+|--------------------|--------------|-------------|
+| `id`               | BIGINT (PK) | Unique ID for the assignment. |
+| `member_id`        | BIGINT (FK) | Links to `members.id`. |
+| `place_id`         | BIGINT (FK) | Links to `places.id`. |
+| `assigned_date`    | DATE        | Date of the assignment. |
+| `day_of_week`      | VARCHAR     | Name of the day (e.g., सोमवार). |
+| `week_number`      | INT         | Week number in the year. |
+| `is_manual`        | BOOLEAN     | Whether assigned manually. |
+| `created_at`       | TIMESTAMP   | Record creation time. |
+| `assignment_date`  | DATE        | Duplicate column for explicit assignment date. |
+| `confirm_if_repeated` | BOOLEAN  | Whether to confirm repeated assignments. |
+
+---
+
+### 4️⃣ `rotation_state`
+Tracks rotation index for automated assignments.
+
+| Column                 | Type         | Description |
+|------------------------|--------------|-------------|
+| `id`                   | BIGINT (PK) | Unique ID. |
+| `gender`               | VARCHAR     | Gender category of the rotation set. |
+| `last_used_member_index` | INT        | Last assigned member index in the rotation. |
+| `updated_at`           | TIMESTAMP   | Last updated time for the rotation state. |
+
+---
+
+## 🔗 Entity Relationships
+```plaintext
+members (1) ────< assignments >──── (1) places
+   ↑                                  ↑
+   └──────── rotation_state ──────────┘
